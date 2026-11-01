@@ -7,7 +7,7 @@
   <meta name="description" content="Aplikasi game quiz edukasi interaktif untuk siswa SD Kelas 1-6 berbasis Kurikulum Merdeka. Belajar sambil bermain dengan seru!">
   
   <!-- Progressive Web App (PWA) Manifest & Meta Tags -->
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#4F46E5">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -86,9 +86,9 @@
           <span id="role-badge-icon">🎒</span> <span id="role-badge-text">Mode Anak</span>
         </button>
 
-        <!-- PWA Install Button (Header) -->
-        <button class="btn-install-pwa" id="btn-install-pwa" onclick="triggerPWAInstall()" style="display: none;" title="Pasang KuisPintar SD di HP atau PC">
-          <span>📲</span> <span class="btn-install-pwa-text">Pasang App</span>
+        <!-- PWA Install Chip (Standar bhs-inggris-anak) -->
+        <button type="button" class="install-chip" id="btn-install-pwa" data-pwa-install hidden title="Pasang KuisPintar SD">
+          <span aria-hidden="true">&#11015;</span> Pasang
         </button>
 
         <!-- Sound Effect Toggle -->
@@ -146,7 +146,6 @@
               <span class="hero-tag" id="user-level-badge">Level 1: Pemula 🌱</span>
               <span class="hero-tag" id="user-streak-tag">🔥 1 Hari Belajar</span>
               <span class="hero-tag" onclick="document.getElementById('modal-settings').classList.add('show')" style="cursor: pointer;">⚙️ Pengaturan Mode</span>
-              <span class="hero-tag hero-tag-pwa" id="hero-btn-install-pwa" onclick="triggerPWAInstall()" style="display: none; background: #EEF2FF; color: #4F46E5; font-weight: 700; cursor: pointer;" title="Pasang aplikasi ke layar utama">📲 Pasang Aplikasi di HP/PC</span>
             </div>
 
             <!-- Level XP Progress Bar Widget -->
@@ -808,6 +807,9 @@
         <button type="button" class="btn-secondary-action" id="tab-btn-list-q" onclick="switchTeacherTab('list')" style="border-radius: 10px; font-size: 0.88rem; padding: 0.45rem 0.9rem;">
           📋 Kelola Soal Kustom (<span id="teacher-custom-count">0</span>)
         </button>
+        <button type="button" class="btn-secondary-action" id="tab-btn-cloud-q" onclick="switchTeacherTab('cloud')" style="border-radius: 10px; font-size: 0.88rem; padding: 0.45rem 0.9rem;">
+          🌐 Database Cloud
+        </button>
       </div>
 
       <!-- Tab 1: Tambah / Upload Soal -->
@@ -911,6 +913,31 @@
         </div>
       </div>
 
+      <!-- Tab 3: Database Cloud Spreadsheet (Google Apps Script) -->
+      <div id="teacher-tab-cloud" style="display: none;">
+        <div style="background: var(--bg-card); border: 2px solid var(--border-light); border-radius: 16px; padding: 1.5rem; margin-top: 0.5rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <h4 style="font-size: 1.05rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              🌐 Integrasi Google Sheets (Google Apps Script)
+            </h4>
+            <span id="cloud-sync-status-badge" style="font-size: 0.75rem; padding: 3px 10px; border-radius: 999px; background: #FEF3C7; color: #92400E; font-weight: 700;">Belum Terhubung</span>
+          </div>
+          <p style="font-size: 0.82rem; color: var(--text-soft); margin-bottom: 1rem; line-height: 1.45;">
+            Masukkan URL Web App dari deployment Google Apps Script spreadsheet Anda. Setiap kali siswa menyelesaikan kuis, skor dan rincian jawaban akan otomatis tersinkron dan tercatat di spreadsheet guru.
+          </p>
+          <label class="form-label" for="input-appscript-teacher-url" style="font-size: 0.82rem; margin-bottom: 0.35rem; display: block;">URL Web App (/exec):</label>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <input type="url" class="form-input" id="input-appscript-teacher-url" placeholder="https://script.google.com/macros/s/.../exec" style="font-size: 0.85rem; flex: 1;">
+            <button type="button" class="btn btn-secondary" onclick="saveAndTestCloudUrl()" style="padding: 0.5rem 1rem; font-size: 0.85rem; white-space: nowrap; border-radius: 10px; font-weight: 700;">
+              Simpan & Tes 🚀
+            </button>
+          </div>
+          <div style="font-size: 0.78rem; color: #64748B; background: var(--bg-page); padding: 0.75rem 1rem; border-radius: 10px; border-left: 3px solid var(--primary);">
+            💡 <strong>Aman & Terisolasi:</strong> Pengaturan ini hanya dapat diakses oleh Guru/Pendidik dengan PIN 1234. Siswa di Mode Anak tidak dapat melihat atau mengubah database ini.
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -990,37 +1017,6 @@
             Ganti Peran 🔄
           </button>
         </div>
-      </div>
-
-      <!-- Cloud Google Sheets Integration (Apps Script) -->
-      <div class="form-group" style="margin-top: 1rem; border-top: 1.5px dashed var(--border-light); padding-top: 0.85rem;">
-        <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.35rem;">
-          <span>🌐 Database Cloud (Google Apps Script):</span>
-          <span id="cloud-sync-status-badge" style="font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; background: #FEF3C7; color: #92400E; font-weight: 700;">Belum Terhubung</span>
-        </label>
-        <div style="display: flex; gap: 0.5rem; margin-top: 0.35rem;">
-          <input type="url" class="form-input" id="input-appscript-url" placeholder="https://script.google.com/macros/s/.../exec" style="font-size: 0.82rem; flex: 1;">
-          <button type="button" class="btn btn-secondary" onclick="saveAndTestCloudUrl()" style="padding: 0.45rem 0.85rem; font-size: 0.82rem; white-space: nowrap; border-radius: 10px;">
-            Simpan & Tes 🚀
-          </button>
-        </div>
-        <span style="font-size: 0.76rem; color: var(--text-soft); display: block; margin-top: 0.35rem;">
-          💡 Pasang URL Web App Google Apps Script dari spreadsheet guru agar skor siswa otomatis tersinkron ke cloud.
-        </span>
-      </div>
-
-      <!-- PWA Offline & Install App Info -->
-      <div class="form-group" style="margin-top: 1rem; border-top: 1.5px dashed var(--border-light); padding-top: 0.85rem;">
-        <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>📲 Aplikasi Mandiri (PWA):</span>
-          <span id="pwa-status-badge" style="font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; background: #DCFCE7; color: #166534; font-weight: 700;">Siap Offline ⚡</span>
-        </label>
-        <p style="font-size: 0.78rem; color: var(--text-soft); margin: 0.25rem 0 0.5rem 0; line-height: 1.4;">
-          Aplikasi ini dapat dipasang langsung ke layar HP atau PC dan dapat dimainkan tanpa koneksi internet.
-        </p>
-        <button type="button" class="btn btn-primary" id="settings-btn-install-pwa" onclick="triggerPWAInstall()" style="width: 100%; border-radius: 10px; font-size: 0.85rem; font-weight: 700; display: none;">
-          📲 Pasang Aplikasi ke Perangkat
-        </button>
       </div>
 
       <button class="btn-primary-block" onclick="document.getElementById('modal-settings').classList.remove('show')">
@@ -1596,5 +1592,6 @@ Pembahasan: Antonim dari besar adalah kecil.
   <!-- Application Logic Scripts -->
   <script src="data-soal.js"></script>
   <script src="app.js"></script>
+  <script src="pwa.js"></script>
 </body>
 </html>

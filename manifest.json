@@ -1,16 +1,23 @@
 {
-  "name": "KuisPintar SD — Media Pembelajaran Kurikulum Merdeka",
-  "short_name": "KuisPintar SD",
-  "description": "Aplikasi kuis dan latihan soal interaktif SD Kelas 1-6 berbasis Kurikulum Merdeka. Dapat dimainkan online & offline.",
+  "id": "/",
+  "name": "KuisPintar SD — Belajar Sambil Bermain Kurikulum Merdeka",
+  "short_name": "Kuis SD",
+  "description": "Aplikasi game quiz edukasi interaktif untuk siswa SD Kelas 1-6 berbasis Kurikulum Merdeka. Main langsung dari layar utama dan tetap jalan tanpa internet!",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "any",
   "background_color": "#F8FAFD",
   "theme_color": "#4F46E5",
-  "lang": "id-ID",
-  "dir": "ltr",
   "categories": ["education", "kids", "games"],
+  "lang": "id",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
   "icons": [
     {
       "src": "icon-192.png",
@@ -25,11 +32,10 @@
       "purpose": "any"
     },
     {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
-

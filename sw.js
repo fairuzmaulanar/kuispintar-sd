@@ -1,20 +1,22 @@
 /**
  * KuisPintar SD — Service Worker Engine
- * Versi: v2.6.0
+ * Versi: v2.7.0
  * Strategi Caching: Stale-While-Revalidate untuk aset lokal, Network-Only untuk Cloud API
  */
 
-const CACHE_NAME = 'kuispintar-v2.6.0';
+const CACHE_NAME = 'kuispintar-v2.7.0';
 const CORE_ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
+  './pwa.js',
   './data-soal.js',
+  './manifest.webmanifest',
   './manifest.json',
-  './icon.svg',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './icon.svg'
 ];
 
 // 1. Install Event: Cache seluruh berkas inti aplikasi
