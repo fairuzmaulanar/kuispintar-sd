@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KuisPintar SD — Game Quiz Edukasi Kurikulum Merdeka</title>
+  <meta name="description" content="Aplikasi game quiz edukasi interaktif untuk siswa SD Kelas 1-6 berbasis Kurikulum Merdeka. Belajar sambil bermain dengan seru!">
+  <link rel="stylesheet" href="style.css">
+  <!-- jsPDF Library for Print-Ready A4 Document Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Mammoth.js for Word (.docx) Extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <!-- PDF.js for PDF Document Text Extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- SheetJS for Excel (.xlsx, .xls) Multi-Sheet Extraction & Template Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- Theme Pre-loader Script (Anti-Flicker / Zero Flash) -->
+  <script>
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('kuispintar_theme');
+        if (!savedTheme) {
+          var savedSettings = localStorage.getItem('kuispintar_settings');
+          if (savedSettings) {
+            var parsed = JSON.parse(savedSettings);
+            if (parsed && parsed.theme) savedTheme = parsed.theme;
+          }
+        }
+        if (savedTheme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- Confetti Canvas for Victory Celebration -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- ========================================================================
+       APP HEADER & NAVIGATION
+       ======================================================================== -->
+  <header class="app-header">
+    <div class="header-container">
+      
+      <!-- Brand Logo -->
+      <div class="brand-wrapper" id="btn-home-brand">
+        <div class="brand-icon">🎓</div>
+        <div class="brand-text">
+          <h1>KuisPintar SD</h1>
+          <span>Kurikulum Merdeka</span>
+        </div>
+      </div>
+
+      <!-- Desktop Nav Links -->
+      <nav class="nav-center">
+        <button class="nav-link active" data-page="view-dashboard">🏠 Beranda</button>
+        <button class="nav-link" data-page="view-history">📜 Riwayat</button>
+        <button class="nav-link" data-page="view-leaderboard">🏆 Peringkat</button>
+        <button class="nav-link" data-page="view-stats">📊 Statistik</button>
+        <button class="nav-link" onclick="openParentalGate()">👨‍👩‍👧 Mode Orang Tua</button>
+        <button class="nav-link" id="nav-teacher-btn" onclick="handleTeacherNavClick()" style="display: none;">📚 Studio Guru</button>
+      </nav>
+
+      <!-- Nav Actions (Audio, Profile, Auth) -->
+      <div class="nav-actions">
+        <!-- Switch Role Badge -->
+        <button class="role-indicator-badge" id="btn-switch-role" onclick="openRoleSelectorModal(true)" title="Ganti Mode Pengguna (Anak / Guru)">
+          <span id="role-badge-icon">🎒</span> <span id="role-badge-text">Mode Anak</span>
+        </button>
+
+        <!-- Sound Effect Toggle -->
+        <button class="icon-btn" id="btn-toggle-sound" title="Toggle Efek Suara">🔊</button>
+        <!-- Text-to-Speech Toggle -->
+        <button class="icon-btn" id="btn-toggle-tts" title="Toggle Narasi Suara">🗣️</button>
+        <!-- Dark / Light Theme Toggle -->
+        <button class="icon-btn" id="btn-toggle-theme" title="Ubah Mode Gelap / Terang">🌙</button>
+
+        <!-- User Profile Chip -->
+        <div class="profile-chip" onclick="openProfileModal(false)" title="Ubah Profil Pemain">
+          <div class="profile-avatar-mini" id="user-avatar-mini">🐱</div>
+          <div class="profile-info-mini">
+            <span class="profile-name-mini" id="user-name-mini">Teman Belajar</span>
+            <span class="profile-xp-mini" id="user-xp-mini">⭐ 0 Poin</span>
+          </div>
+        </div>
+
+        <!-- Google Auth / Sync Button -->
+        <button class="icon-btn" id="btn-google-login" title="Masuk dengan Google" style="color: #4285F4;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       MAIN APP CONTAINER
+       ======================================================================== -->
+  <main class="main-wrapper">
+
+    <!-- ====================================================================
+         VIEW 1: DASHBOARD / BERANDA UTAMA
+         ==================================================================== -->
+    <section id="view-dashboard" class="page-view active">
+      
+      <!-- Hero Banner -->
+      <div class="hero-card">
+        <div class="hero-content">
+          <div class="hero-text">
+            <h2 id="hero-greeting-name">Halo, Bintang Pelajar! 👋</h2>
+            <p>Selamat datang di petualangan belajar seru Kurikulum Merdeka! Selesaikan kuis, kumpulkan poin bintang, dan raih badge kebanggaanmu.</p>
+            <div class="hero-badges-row">
+              <span class="hero-tag" id="user-school-tag" style="background: #E0F2FE; color: #0369A1; font-weight: 700;">🏫 SD Merdeka</span>
+              <span class="hero-tag" id="user-locked-class-tag" style="background: #FEF3C7; color: #92400E; font-weight: 700;">🔒 Kelas 1 (Terkunci)</span>
+              <span class="hero-tag" id="user-level-badge">Level 1: Pemula 🌱</span>
+              <span class="hero-tag" id="user-streak-tag">🔥 1 Hari Belajar</span>
+              <span class="hero-tag" onclick="document.getElementById('modal-settings').classList.add('show')" style="cursor: pointer;">⚙️ Pengaturan Mode</span>
+            </div>
+
+            <!-- Level XP Progress Bar Widget -->
+            <div class="hero-level-progress-wrap" id="hero-xp-widget">
+              <div class="level-progress-header">
+                <span id="xp-current-level-title">🌱 Level 1: Pemula</span>
+                <span id="xp-points-ratio">0 / 200 XP</span>
+              </div>
+              <div class="level-progress-bar-bg">
+                <div class="level-progress-fill" id="xp-progress-bar-fill" style="width: 0%;"></div>
+              </div>
+              <div class="level-progress-footer">
+                <span id="xp-remaining-text">Sisa 200 XP lagi menuju Level 2</span>
+                <span id="xp-next-level-title">Target: Level 2 🚀</span>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: stretch;">
+            <button class="btn-play-topic" onclick="startQuickQuiz()" style="font-size: 1.05rem; padding: 0.85rem 1.4rem;">
+              Mulai Kuis Cepat 🚀
+            </button>
+            <button class="btn-play-topic" id="btn-hero-promotion" onclick="openPromotionExamModal()" style="display: none; background: linear-gradient(135deg, #10B981, #059669); font-size: 0.95rem; padding: 0.75rem 1.2rem;">
+              🎓 Ujian Naik Kelas Siap!
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Teacher Mode Alert Banner (Visible only in Teacher Mode) -->
+      <div id="teacher-mode-banner" class="teacher-mode-banner" style="display: none;">
+        <div class="teacher-mode-banner-text">
+          <span style="font-size: 1.6rem;">👨‍🏫</span>
+          <div>
+            <strong>Mode Guru Aktif</strong>
+            <div style="font-size: 0.82rem; opacity: 0.9;">
+              Anda berada dalam mode pendidik (kelola bank soal & materi). Pilihan topik kuis hanya dalam mode pratinjau soal & kunci jawaban.
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap;">
+          <button class="btn btn-secondary" onclick="openTeacherGate()" style="padding: 0.4rem 0.85rem; font-size: 0.82rem; white-space: nowrap;">
+            📚 Studio Guru
+          </button>
+          <button class="btn btn-primary" onclick="applyUserRole('student')" style="padding: 0.4rem 0.85rem; font-size: 0.82rem; white-space: nowrap; background: #10B981; border-color: #059669;">
+            🎒 Beralih ke Mode Anak
+          </button>
+        </div>
+      </div>
+
+      <!-- Golden Quiz Challenge Banner (Event Khusus Tiap 3-5 Kuis) -->
+      <div class="golden-challenge-card" id="golden-challenge-banner" style="display: none;">
+        <div style="display: flex; align-items: center; gap: 0.85rem;">
+          <div style="font-size: 2.5rem; line-height: 1;">🔥</div>
+          <div>
+            <span class="golden-badge-glow">⚡ TANTANGAN SPESIAL TERBUKA</span>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #92400E; margin-bottom: 0.2rem;">Golden Quiz Challenge Menantimu!</h3>
+            <p style="font-size: 0.85rem; color: #78350F; margin: 0;">Kamu sudah giat menyelesaikan latihan kuis! Ambil tantangan berhadiah <strong>DOUBLE XP (Bonus Poin 2x Lipat)</strong>!</p>
+          </div>
+        </div>
+        <button type="button" class="btn-primary-action" onclick="startGoldenChallenge()" style="background: linear-gradient(135deg, #D97706, #B45309); font-size: 0.92rem; padding: 0.75rem 1.25rem; white-space: nowrap; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4);">
+          Mulai Challenge 🏆
+        </button>
+      </div>
+
+      <!-- Promotion Exam Ready Banner (Ketika Level >= 5) -->
+      <div class="promotion-exam-card" id="promotion-exam-banner" style="display: none;">
+        <div style="display: flex; align-items: center; gap: 0.85rem;">
+          <div style="font-size: 2.5rem; line-height: 1;">🎓</div>
+          <div>
+            <span class="topic-badge-pill" style="background: #10B981; color: #FFFFFF; font-size: 0.72rem; padding: 0.2rem 0.55rem; font-weight: 800;">SYARAT LEVEL TERCAPAI</span>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #065F46; margin-bottom: 0.2rem;" id="promotion-banner-title">Siap Naik ke Kelas Berikutnya?</h3>
+            <p style="font-size: 0.85rem; color: #047857; margin: 0;">Kamu telah mencapai Level 5 (Satria Pelajar)! Buktikan kemampuanmu di <strong>Ujian Kenaikan Kelas</strong> (Syarat Nilai: 90).</p>
+          </div>
+        </div>
+        <button type="button" class="btn-primary-action" onclick="openPromotionExamModal()" style="background: linear-gradient(135deg, #059669, #047857); font-size: 0.92rem; padding: 0.75rem 1.25rem; white-space: nowrap; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);">
+          Ikuti Ujian 🎓
+        </button>
+      </div>
+
+      <!-- Quick Stats Bar -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #EEF2FF; color: #4F46E5;">📚</div>
+          <div class="stat-info">
+            <h3 id="stat-total-quiz">0</h3>
+            <p>Kuis Selesai</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #FEF3C7; color: #D97706;">⭐</div>
+          <div class="stat-info">
+            <h3 id="stat-total-poin">0</h3>
+            <p>Total Poin XP</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #D1FAE5; color: #059669;">🎯</div>
+          <div class="stat-info">
+            <h3 id="stat-avg-skor">-</h3>
+            <p>Rata-rata Skor</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #FCE7F3; color: #DB2777;">🎖️</div>
+          <div class="stat-info">
+            <h3 id="stat-total-badge">1 Lencana</h3>
+            <p>Prestasi Diraih</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fase Kurikulum Merdeka Cards -->
+      <div class="section-header">
+        <h3 class="section-title">🌱 Jenjang Fase Kurikulum Merdeka</h3>
+      </div>
+      <p class="section-subtitle">Pilih fase pembelajaran untuk menampilkan capaian dan materi yang sesuai dengan usiamu.</p>
+
+      <div class="fase-cards-grid">
+        <!-- Fase A -->
+        <div class="fase-card fase-a selected" data-fase="faseA">
+          <div>
+            <div class="fase-header">
+              <span class="fase-badge">Fase A</span>
+              <span style="font-size: 1.5rem;">🎒</span>
+            </div>
+            <h4>Fondasi Awal (Kelas 1–2)</h4>
+            <p>Literasi membaca dasar, pengenalan huruf, dan penjumlahan ceria berbasis visual konkret.</p>
+          </div>
+          <div class="fase-classes-pill">
+            <span class="class-pill-mini">Kelas 1</span>
+            <span class="class-pill-mini">Kelas 2</span>
+          </div>
+        </div>
+
+        <!-- Fase B -->
+        <div class="fase-card fase-b" data-fase="faseB">
+          <div>
+            <div class="fase-header">
+              <span class="fase-badge">Fase B</span>
+              <span style="font-size: 1.5rem;">🔍</span>
+            </div>
+            <h4>Eksplorasi (Kelas 3–4)</h4>
+            <p>Pengembangan konsep ilmiah IPAS, nilai Pancasila, dan perkalian-pembagian terstruktur.</p>
+          </div>
+          <div class="fase-classes-pill">
+            <span class="class-pill-mini">Kelas 3</span>
+            <span class="class-pill-mini">Kelas 4</span>
+          </div>
+        </div>
+
+        <!-- Fase C -->
+        <div class="fase-card fase-c" data-fase="faseC">
+          <div>
+            <div class="fase-header">
+              <span class="fase-badge">Fase C</span>
+              <span style="font-size: 1.5rem;">🧠</span>
+            </div>
+            <h4>Penalaran Kritis (Kelas 5–6)</h4>
+            <p>Sistem organ tubuh, berpikir komputasional Koding & AI, analisis masalah, serta projek P5.</p>
+          </div>
+          <div class="fase-classes-pill">
+            <span class="class-pill-mini">Kelas 5</span>
+            <span class="class-pill-mini">Kelas 6</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kelas Selector Bar -->
+      <div class="class-selector-wrapper">
+        <div>
+          <h4 style="font-size: 1.05rem; font-weight: 700;">Tingkat Kelas</h4>
+          <span style="font-size: 0.78rem; color: #64748B;">Pilih kelas spesifik untuk melihat daftar mata pelajaran:</span>
+        </div>
+        <div class="class-chips-row">
+          <button class="class-chip-btn active" data-grade="1">Kelas 1</button>
+          <button class="class-chip-btn" data-grade="2">Kelas 2</button>
+          <button class="class-chip-btn" data-grade="3">Kelas 3</button>
+          <button class="class-chip-btn" data-grade="4">Kelas 4</button>
+          <button class="class-chip-btn" data-grade="5">Kelas 5</button>
+          <button class="class-chip-btn" data-grade="6">Kelas 6</button>
+        </div>
+      </div>
+
+      <!-- Mata Pelajaran Grid -->
+      <div class="section-header">
+        <h3 class="section-title" id="active-grade-label">Mata Pelajaran Kelas 1 (Fase A)</h3>
+      </div>
+      <p class="section-subtitle">Sentuh kartu mata pelajaran untuk memilih materi kuis 10 soal yang ingin dimainkan.</p>
+
+      <div class="subjects-grid" id="subjects-container">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <!-- Badges Showcase Section -->
+      <div class="section-header" style="margin-top: 2rem;">
+        <h3 class="section-title">🎖️ Koleksi Lencana Prestasi</h3>
+      </div>
+      <p class="section-subtitle">Selesaikan berbagai misi belajar untuk membuka semua lencana game!</p>
+
+      <div class="badges-showcase-grid" id="badges-showcase-grid">
+        <!-- Injected via JavaScript -->
+      </div>
+
+    </section>
+
+    <!-- ====================================================================
+         VIEW 2: QUIZ ARENA (GAMEPLAY SINGLE QUESTION PER SCREEN)
+         ==================================================================== -->
+    <section id="view-quiz-arena" class="page-view">
+      <div class="quiz-arena">
+        
+        <!-- Top Control Bar -->
+        <div class="quiz-top-bar">
+          <button class="btn-exit-quiz" onclick="confirmExitQuiz()">✕ Keluar</button>
+          <div class="timer-pill" id="quiz-timer-pill">⏱️ <span id="timer-val">00:00</span></div>
+          <button class="btn-tts-speaker" id="btn-tts" title="Dengarkan Soal (Text-to-Speech)">
+            🔊 Baca Soal
+          </button>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="progress-card">
+          <div class="progress-header">
+            <span id="quiz-question-number">Soal 1 dari 10</span>
+            <span id="quiz-progress-pct">10%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="quiz-progress-fill"></div>
+          </div>
+        </div>
+
+        <!-- Question Card -->
+        <div class="question-box">
+          <div class="question-meta-row">
+            <span class="question-badge" id="question-badge-info">Matematika • Mudah</span>
+            <span style="font-size: 0.8rem; font-weight: 700; color: #10B981;">+10 Poin</span>
+          </div>
+          <div class="question-text" id="quiz-question-text">
+            Pertanyaan kuis sedang dimuat...
+          </div>
+        </div>
+
+        <!-- Options A, B, C, D -->
+        <div class="options-grid" id="quiz-options-grid">
+          <!-- Injected via JavaScript -->
+        </div>
+
+        <!-- Inline Positive Feedback Drawer -->
+        <div class="quiz-feedback-box" id="quiz-feedback-box">
+          <div class="feedback-header">
+            <span class="feedback-icon" id="feedback-icon">🎉</span>
+            <span class="feedback-title" id="feedback-title">Jawabanmu Tepat Sekali!</span>
+          </div>
+          <div class="feedback-text" id="feedback-text">
+            Pembahasan konsep ringkas...
+          </div>
+          <button class="btn-next-question" id="btn-next-question" onclick="nextQuestion()">
+            Lanjut ke Soal Berikutnya ➡️
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         VIEW 3: RESULTS SCREEN & CELEBRATION
+         ==================================================================== -->
+    <section id="view-results" class="page-view">
+      <div class="results-card">
+        
+        <div class="result-badge-icon" id="res-badge-icon">🎉</div>
+        <h2 style="font-size: 1.75rem; margin-bottom: 0.2rem;">Kuis Selesai!</h2>
+        <p style="color: #64748B; font-size: 0.9rem;">Kamu telah menyelesaikan seluruh 10 soal dengan hebat.</p>
+
+        <!-- Circular Score Meter -->
+        <div class="result-score-circle" id="res-score-circle">
+          <div class="result-score-inner">
+            <div class="score-number" id="res-score-number">100</div>
+            <div class="score-label">Skor Akhir</div>
+          </div>
+        </div>
+
+        <!-- Motivational Message Box -->
+        <div class="result-message-box">
+          <h3 id="res-message-title">Hebat! Kamu luar biasa! 🎉</h3>
+          <p id="res-message-desc">Hasil belajarmu sangat memuaskan, terus pertahankan semangat belajarmu!</p>
+        </div>
+
+        <!-- Stats Breakdown Row -->
+        <div class="result-stats-row">
+          <div class="result-stat-item correct">
+            <span class="num" id="res-stat-correct">10</span>
+            <span class="lbl">Jawaban Benar</span>
+          </div>
+          <div class="result-stat-item wrong">
+            <span class="num" id="res-stat-wrong">0</span>
+            <span class="lbl">Jawaban Salah</span>
+          </div>
+          <div class="result-stat-item time">
+            <span class="num" id="res-stat-duration">1m 30s</span>
+            <span class="lbl">Waktu Tempuh</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="result-actions-grid">
+          <button class="btn-result-action btn-pdf-action" onclick="downloadResultPDF()">
+            📥 Download PDF
+          </button>
+          <button class="btn-result-action btn-primary-action" onclick="openReviewPage()">
+            💡 Lihat Pembahasan
+          </button>
+          <button class="btn-result-action btn-secondary-action" onclick="startQuizSession(state.currentReviewResult ? (state.currentReviewResult.quizPackageId || state.currentReviewResult.id) : '')">
+            🔄 Kerjakan Lagi
+          </button>
+          <button class="btn-result-action btn-secondary-action" onclick="switchPage('view-leaderboard')">
+            🏆 Lihat Leaderboard
+          </button>
+          <button class="btn-result-action btn-secondary-action" style="grid-column: 1 / -1;" onclick="switchPage('view-dashboard')">
+            🏠 Kembali ke Beranda
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         VIEW 4: REVIEW / PEMBAHASAN LENGKAP
+         ==================================================================== -->
+    <section id="view-review" class="page-view">
+      <div class="review-wrapper">
+        
+        <div class="section-header">
+          <h3 class="section-title" id="review-header-title">💡 Pembahasan Kuis Lengkap</h3>
+          <button class="btn-exit-quiz" onclick="switchPage('view-results')">⬅️ Kembali ke Hasil</button>
+        </div>
+        <p class="section-subtitle">Pelajari setiap proses berpikir dan konsep di balik setiap soal.</p>
+
+        <div id="review-list-container">
+          <!-- Injected via JavaScript -->
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem; justify-content: center;">
+          <button class="btn-result-action btn-pdf-action" onclick="downloadResultPDF()">
+            📥 Unduh Lembar Kerja PDF
+          </button>
+          <button class="btn-result-action btn-primary-action" onclick="switchPage('view-dashboard')">
+            🏠 Selesai & Kembali ke Beranda
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         VIEW 5: RIWAYAT BELAJAR (HISTORY)
+         ==================================================================== -->
+    <section id="view-history" class="page-view">
+      <div class="review-wrapper">
+        
+        <div class="section-header">
+          <h3 class="section-title">📜 Riwayat Belajar Saya</h3>
+        </div>
+        <p class="section-subtitle">Daftar seluruh latihan dan kuis yang pernah kamu kerjakan.</p>
+
+        <!-- Filters Bar -->
+        <div style="display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1.25rem;">
+          <select class="form-input" id="filter-history-grade" style="max-width: 160px; padding: 0.5rem 0.75rem;" onchange="renderHistoryView()">
+            <option value="all">Semua Kelas</option>
+            <option value="1">Kelas 1</option>
+            <option value="2">Kelas 2</option>
+            <option value="3">Kelas 3</option>
+            <option value="4">Kelas 4</option>
+            <option value="5">Kelas 5</option>
+            <option value="6">Kelas 6</option>
+          </select>
+          <input type="text" class="form-input" id="filter-history-search" placeholder="Cari materi atau mapel..." style="flex: 1; min-width: 180px; padding: 0.5rem 0.75rem;" oninput="renderHistoryView()">
+        </div>
+
+        <div id="history-list-container">
+          <!-- Injected via JavaScript -->
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         VIEW 6: LEADERBOARD SCREEN
+         ==================================================================== -->
+    <section id="view-leaderboard" class="page-view">
+      <div class="leaderboard-wrapper">
+        
+        <div class="section-header" style="flex-wrap: wrap; gap: 0.5rem;">
+          <h3 class="section-title" id="lb-header-title">🏆 Papan Peringkat Juara</h3>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <select class="form-input" id="filter-lb-grade" style="max-width: 140px; padding: 0.4rem 0.75rem; font-size: 0.85rem;" onchange="handleLeaderboardFilterChange()">
+              <option value="all">Semua Kelas</option>
+              <option value="1">Kelas 1</option>
+              <option value="2">Kelas 2</option>
+              <option value="3">Kelas 3</option>
+              <option value="4">Kelas 4</option>
+              <option value="5">Kelas 5</option>
+              <option value="6">Kelas 6</option>
+            </select>
+            <select class="form-input" id="filter-lb-mapel" style="max-width: 190px; padding: 0.4rem 0.75rem; font-size: 0.85rem;" onchange="renderLeaderboardView()">
+              <option value="all">Semua Mata Pelajaran</option>
+            </select>
+          </div>
+        </div>
+        <p class="section-subtitle" id="lb-header-subtitle">Kumpulkan poin sebanyak-banyaknya untuk menempati podium teratas!</p>
+
+        <!-- Top 3 Podium -->
+        <div class="podium-container" id="lb-podium-container">
+          <!-- Injected via JavaScript -->
+        </div>
+
+        <!-- Ranking Table -->
+        <div class="lb-table" id="lb-table-container">
+          <!-- Injected via JavaScript -->
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         VIEW 7: STATISTIK & ANALITIK BELAJAR
+         ==================================================================== -->
+    <section id="view-stats" class="page-view">
+      <div class="review-wrapper">
+        
+        <div class="section-header">
+          <h3 class="section-title">📊 Statistik Perkembangan Belajar</h3>
+        </div>
+        <p class="section-subtitle">Pantau grafik kemajuan nilai dan materi yang perlu ditingkatkan.</p>
+
+        <!-- Metrics Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #EEF2FF; color: #4F46E5;">📈</div>
+            <div class="stat-info">
+              <h3 id="analytics-avg-score">-</h3>
+              <p>Rata-rata Nilai</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #ECFDF5; color: #059669;">⭐</div>
+            <div class="stat-info">
+              <h3 id="analytics-fav-mapel" style="font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</h3>
+              <p>Mapel Terfavorit</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #FEF3C7; color: #D97706;">🥇</div>
+            <div class="stat-info">
+              <h3 id="analytics-highest-materi" style="font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</h3>
+              <p>Nilai Tertinggi</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #FFE4E6; color: #BE123C;">💪</div>
+            <div class="stat-info">
+              <h3 id="analytics-practice-materi" style="font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</h3>
+              <p>Perlu Latihan</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Canvas Chart Progression -->
+        <div class="question-box" style="margin-top: 1.25rem;">
+          <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.75rem;">Grafik Perkembangan Skor Kuis Terakhir</h4>
+          <canvas id="stats-chart-canvas" width="600" height="240" style="width: 100%; height: auto; display: block;"></canvas>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         APP FOOTER (COMPACT 1-2 BARIS — CREATED BY FAIRUZ MAULANA)
+         ==================================================================== -->
+    <footer class="app-footer">
+      <div class="footer-compact-card">
+        <div class="footer-compact-brand">
+          <span class="footer-compact-icon">🎓</span>
+          <span class="footer-brand-title"><strong>KuisPintar SD</strong></span>
+          <span class="footer-compact-dot">•</span>
+          <span class="footer-brand-desc">Kurikulum Merdeka (Fase A–C)</span>
+        </div>
+        <div class="footer-compact-author">
+          <span class="author-pill">✨ Created by <strong>Fairuz Maulana</strong></span>
+          <span class="footer-compact-dot">•</span>
+          <span class="footer-copy-text">© 2026 Hak Cipta Dilindungi</span>
+        </div>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- ========================================================================
+       MOBILE BOTTOM NAVIGATION BAR
+       ======================================================================== -->
+  <nav class="mobile-nav-bar">
+    <button class="mobile-nav-item active" data-page="view-dashboard">
+      <span class="icon">🏠</span>
+      <span>Beranda</span>
+    </button>
+    <button class="mobile-nav-item" data-page="view-history">
+      <span class="icon">📜</span>
+      <span>Riwayat</span>
+    </button>
+    <button class="mobile-nav-item" data-page="view-leaderboard">
+      <span class="icon">🏆</span>
+      <span>Peringkat</span>
+    </button>
+    <button class="mobile-nav-item" data-page="view-stats">
+      <span class="icon">📊</span>
+      <span>Statistik</span>
+    </button>
+    <button class="mobile-nav-item" onclick="openParentalGate()">
+      <span class="icon">👨‍👩‍👧</span>
+      <span>Orang Tua</span>
+    </button>
+    <button class="mobile-nav-item" id="mobile-nav-teacher-btn" onclick="handleTeacherNavClick()" style="display: none;">
+      <span class="icon" id="mobile-nav-teacher-icon">📚</span>
+      <span id="mobile-nav-teacher-text">Studio</span>
+    </button>
+  </nav>
+
+  <!-- ========================================================================
+       MODAL: ONBOARDING & PROFILE SETTING
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-profile">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">🐾 Pilih Profil Teman Belajar</h3>
+        <button class="modal-close-btn" id="btn-close-profile">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="input-player-name">Nama Pemain (Wajib diisi):</label>
+        <input type="text" class="form-input" id="input-player-name" placeholder="Tulis namamu di sini, misal: Budi">
+        <div class="input-feedback-note" id="profile-name-warning">Yuk isi namamu terlebih dahulu!</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="input-player-school">🏫 Asal Sekolah:</label>
+        <input type="text" class="form-input" id="input-player-school" placeholder="misal: SDN 01 Menteng / SDIT Al-Azhar">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="select-player-grade">Pilih Kelas:</label>
+        <select class="form-input" id="select-player-grade">
+          <option value="1">Kelas 1 (Fase A)</option>
+          <option value="2">Kelas 2 (Fase A)</option>
+          <option value="3">Kelas 3 (Fase B)</option>
+          <option value="4">Kelas 4 (Fase B)</option>
+          <option value="5">Kelas 5 (Fase C)</option>
+          <option value="6">Kelas 6 (Fase C)</option>
+        </select>
+        <div id="profile-grade-locked-note" style="display: none; font-size: 0.78rem; color: #D97706; margin-top: 0.35rem; font-weight: 600;">🔒 Kelas dikunci demi integritas leaderboard. Naik kelas via Ujian Kenaikan Kelas atau Mode Orang Tua.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Pilih Avatar Hewan Lucu:</label>
+        <div class="avatar-selection-grid" id="avatar-grid">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+        <button class="btn-primary-block" id="btn-save-profile" style="flex: 2;">
+          Simpan & Mulai Main! 🚀
+        </button>
+        <button type="button" class="btn-secondary-action" id="btn-guest-profile" style="flex: 1; border-radius: 14px; font-weight: 700;">
+          Sebagai Tamu
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: TOPICS / MATERI LIST
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-topics">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="topics-modal-title">Pilih Materi</h3>
+        <button class="modal-close-btn">✕</button>
+      </div>
+      <div class="topic-list" id="topics-list-container">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: TEACHER SECURITY GATE (GERBANG KEAMANAN GURU)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-teacher-gate">
+    <div class="modal-content" style="max-width: 440px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; border-bottom: none; padding-bottom: 0;">
+        <span style="font-size: 2.5rem;">👩‍🏫</span>
+      </div>
+      <h3 class="modal-title" style="margin-bottom: 0.35rem;">Gerbang Keamanan Guru</h3>
+      <p style="font-size: 0.88rem; color: #64748B; margin-bottom: 1.25rem;">
+        Halaman ini khusus untuk Pendidik/Guru dalam mengelola bank soal kustom. Silakan masukkan PIN Guru (Default: <strong>1234</strong>):
+      </p>
+      
+      <div style="background: var(--bg-card); border: 2px dashed #CBD5E1; border-radius: 14px; padding: 1.2rem; margin-bottom: 1.25rem;">
+        <label class="form-label" for="input-teacher-pin" style="font-size: 0.82rem; margin-bottom: 0.5rem;">Masukkan 4 Digit PIN Guru:</label>
+        <input type="password" maxlength="6" class="form-input" id="input-teacher-pin" placeholder="••••" style="text-align: center; font-size: 1.5rem; letter-spacing: 0.3rem; font-weight: 700; max-width: 180px; margin: 0 auto;">
+        <div id="teacher-gate-error" style="display: none; color: #EF4444; font-size: 0.82rem; font-weight: 600; margin-top: 0.5rem;">
+          PIN salah. Masukkan PIN guru yang benar (Default: 1234).
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="button" class="btn-primary-block" onclick="verifyTeacherGate()" style="flex: 2;">
+          Buka Mode Guru 🚀
+        </button>
+        <button type="button" class="btn-secondary-action" onclick="document.getElementById('modal-teacher-gate').classList.remove('show')" style="flex: 1; border-radius: 12px; font-weight: 700;">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: TEACHER / ADMIN MODE (BANK SOAL & EXPORT/IMPORT JSON)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-teacher">
+    <div class="modal-content" style="max-width: 780px;">
+      <div class="modal-header">
+        <h3 class="modal-title">👩‍🏫 Mode Guru: Manajemen Bank Soal</h3>
+        <button class="modal-close-btn">✕</button>
+      </div>
+      <p style="font-size: 0.85rem; color: #64748B; margin-bottom: 1rem;">
+        Bapak/Ibu Guru dapat menambah, mengedit, atau menghapus butir soal kustom, serta mengekspor/mengimpor berkas soal.
+      </p>
+
+      <!-- Action Bar -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        <button class="btn-result-action btn-secondary-action" id="btn-export-json" style="flex: 1; font-size: 0.88rem;">
+          📤 Ekspor JSON
+        </button>
+        <label class="btn-result-action btn-secondary-action" style="flex: 1; font-size: 0.88rem; cursor: pointer; text-align: center;">
+          📥 Impor JSON
+          <input type="file" id="input-import-json" accept=".json" style="display: none;">
+        </label>
+        <button type="button" class="btn-result-action btn-secondary-action" id="btn-show-template-info" style="flex: 1; font-size: 0.88rem;">
+          📋 Contoh Format
+        </button>
+      </div>
+
+      <!-- Tabs Nav for Teacher Mode -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1.5px solid var(--border-light); padding-bottom: 0.5rem;">
+        <button type="button" class="btn-secondary-action active" id="tab-btn-add-q" onclick="switchTeacherTab('add')" style="border-radius: 10px; font-size: 0.88rem; padding: 0.45rem 0.9rem;">
+          ➕ Tambah / Upload Soal
+        </button>
+        <button type="button" class="btn-secondary-action" id="tab-btn-list-q" onclick="switchTeacherTab('list')" style="border-radius: 10px; font-size: 0.88rem; padding: 0.45rem 0.9rem;">
+          📋 Kelola Soal Kustom (<span id="teacher-custom-count">0</span>)
+        </button>
+      </div>
+
+      <!-- Tab 1: Tambah / Upload Soal -->
+      <div id="teacher-tab-add">
+        <!-- PDF / Word / Excel / Text Upload Dropzone -->
+        <div class="doc-upload-card" id="doc-upload-dropzone">
+          <div class="doc-upload-icon">📊</div>
+          <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.25rem;">Upload Word (.docx), PDF (.pdf), atau Excel (.xlsx)</h4>
+          <p style="font-size: 0.82rem; color: #64748B; margin-bottom: 0.75rem;">
+            Mendukung berkas Excel multi-sheet per kelas (Sheet <em>Kelas 1</em>, <em>Kelas 2</em>, dst.) maupun berkas Word/PDF.
+          </p>
+          <label class="btn-primary-action" style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.65rem 1.25rem; font-size: 0.95rem; border-radius: 12px;">
+            📁 Pilih File Excel / Word / PDF
+            <input type="file" id="input-doc-file" accept=".docx,.pdf,.xlsx,.xls,.txt" style="display: none;">
+          </label>
+          <div style="font-size: 0.72rem; color: #94A3B8; margin-top: 0.5rem;">
+            Format didukung: Microsoft Excel (.xlsx, .xls), Word (.docx), PDF (.pdf), & Teks (.txt)
+          </div>
+        </div>
+
+        <!-- Add Question Form -->
+        <form id="form-add-question">
+          <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.75rem;" id="teacher-form-title">Tambah Butir Soal Baru</h4>
+          <input type="hidden" id="teacher-editing-id" value="">
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;" class="form-group">
+            <div>
+              <label class="form-label">Tingkat Kelas:</label>
+              <select class="form-input" id="teacher-grade">
+                <option value="1">Kelas 1</option>
+                <option value="2">Kelas 2</option>
+                <option value="3">Kelas 3</option>
+                <option value="4">Kelas 4</option>
+                <option value="5">Kelas 5</option>
+                <option value="6">Kelas 6</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Mata Pelajaran:</label>
+              <select class="form-input" id="teacher-mapel">
+                <option value="matematika">Matematika</option>
+                <option value="bindonesia">Bahasa Indonesia</option>
+                <option value="ipas">IPAS</option>
+                <option value="pancasila">Pendidikan Pancasila</option>
+                <option value="koding_ai">Koding & AI</option>
+                <option value="binggris">Bahasa Inggris</option>
+                <option value="senibudaya">Seni Budaya</option>
+                <option value="pjok">PJOK</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nama Materi / Topik:</label>
+            <input type="text" class="form-input" id="teacher-materi" placeholder="Contoh: Pecahan Senilai">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Kalimat Pertanyaan:</label>
+            <textarea class="form-input" id="teacher-qtext" rows="2" placeholder="Tuliskan teks pertanyaan soal..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Pilihan Jawaban:</label>
+            <input type="text" class="form-input" id="teacher-opt-a" placeholder="Pilihan A" style="margin-bottom: 0.35rem;">
+            <input type="text" class="form-input" id="teacher-opt-b" placeholder="Pilihan B" style="margin-bottom: 0.35rem;">
+            <input type="text" class="form-input" id="teacher-opt-c" placeholder="Pilihan C" style="margin-bottom: 0.35rem;">
+            <input type="text" class="form-input" id="teacher-opt-d" placeholder="Pilihan D">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Kunci Jawaban Benar:</label>
+            <select class="form-input" id="teacher-correct">
+              <option value="0">Pilihan A</option>
+              <option value="1">Pilihan B</option>
+              <option value="2">Pilihan C</option>
+              <option value="3">Pilihan D</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Pembahasan Konsep (Ramah Anak):</label>
+            <textarea class="form-input" id="teacher-expl" rows="2" placeholder="Penjelasan cara menjawab soal..."></textarea>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="submit" class="btn-primary-block" id="btn-submit-teacher-q" style="flex: 2;">Simpan Soal ke Bank Data 💾</button>
+            <button type="button" id="btn-cancel-teacher-edit" onclick="cancelTeacherEdit()" class="btn-secondary-action" style="display: none; flex: 1; border-radius: 12px; font-weight: 700;">Batal Edit</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tab 2: Kelola Soal Kustom (List, Edit, Delete) -->
+      <div id="teacher-tab-list" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h4 style="font-size: 1rem; font-weight: 700;">Daftar Butir Soal Kustom Guru</h4>
+          <span style="font-size: 0.8rem; color: #64748B;">Klik Edit untuk mengubah atau Hapus untuk menghapus soal</span>
+        </div>
+        <div id="teacher-custom-questions-table" style="max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.65rem; padding-right: 4px;">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: GOOGLE AUTH SIMULATION & SYNC
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-google-auth">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">🔐 Masuk Akun Google & Sinkronisasi</h3>
+        <button class="modal-close-btn">✕</button>
+      </div>
+      <p style="font-size: 0.88rem; color: #64748B; margin-bottom: 1.25rem;">
+        Hubungkan akun Google/Gmail agar riwayat belajar, badge, dan poin kamu dapat tersimpan aman serta tersinkronisasi antar perangkat.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Nama Lengkap Siswa:</label>
+        <input type="text" class="form-input" id="google-auth-name" placeholder="Nama siswa">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">🏫 Asal Sekolah:</label>
+        <input type="text" class="form-input" id="google-auth-school" placeholder="contoh: SDN 01 Menteng / SDIT Al-Azhar">
+        <span style="font-size: 0.76rem; color: #64748B;">Bawa nama harum sekolahmu di papan peringkat juara!</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Alamat Gmail:</label>
+        <input type="email" class="form-input" id="google-auth-email" placeholder="contoh: nama.siswa@gmail.com">
+      </div>
+
+      <button class="btn-primary-block" id="btn-confirm-google-auth" style="background: #4285F4;">
+        Masuk & Sinkronkan Data
+      </button>
+
+      <p style="font-size: 0.75rem; color: #94A3B8; text-align: center; margin-top: 0.85rem;">
+        Pengguna tetap dapat bermain sebagai Tamu (Guest) secara bebas tanpa batasan fitur.
+      </p>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: SETTINGS (TIMER & AUDIO MODES)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-settings">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ Pengaturan Aplikasi</h3>
+        <button class="modal-close-btn">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Mode Timer Kuis:</label>
+        <select class="form-input" id="select-timer-mode">
+          <option value="santai">Mode Santai (Stopwatch tanpa batasan waktu)</option>
+          <option value="tantangan">Mode Tantangan (Hitung mundur 45 detik)</option>
+          <option value="cepat">Mode Cepat (Hitung mundur 20 detik)</option>
+        </select>
+        <span style="font-size: 0.78rem; color: #64748B;">Cocok untuk melatih ketangkasan siswa kelas 3 s.d. 6.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tema Tampilan (Mode Gelap / Terang):</label>
+        <select class="form-input" id="select-theme-mode">
+          <option value="light">☀️ Mode Terang (Default)</option>
+          <option value="dark">🌙 Mode Gelap (Dark Mode)</option>
+        </select>
+        <span style="font-size: 0.78rem; color: #64748B;">Mode gelap membuat mata lebih nyaman di ruangan redup dengan teks putih bersih.</span>
+      </div>
+
+      <div class="form-group" style="margin-top: 1rem; border-top: 1.5px dashed var(--border-light); padding-top: 0.85rem;">
+        <label class="form-label">Mode Penggunaan Saat Ini:</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;">
+          <span id="settings-current-role-label" style="font-size: 0.88rem; font-weight: 700; color: var(--primary);">🎒 Mode Siswa (Anak)</span>
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-settings').classList.remove('show'); openRoleSelectorModal(true);" style="padding: 0.4rem 0.85rem; font-size: 0.82rem; border-radius: 10px;">
+            Ganti Peran 🔄
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-primary-block" onclick="document.getElementById('modal-settings').classList.remove('show')">
+        Tutup Pengaturan
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: DOKUMEN PREVIEW & CORRECTION (WORD/PDF PARSER)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-doc-preview">
+    <div class="modal-content" style="max-width: 720px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">📑 Pratinjau Ekstraksi Soal Dokumen</h3>
+          <span style="font-size: 0.82rem; color: #64748B;" id="doc-preview-filename">File: Dokumen (0 Soal Terdeteksi)</span>
+        </div>
+        <button class="modal-close-btn">✕</button>
+      </div>
+
+      <div class="form-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.65rem; background: #F8FAFC; padding: 0.85rem; border-radius: 14px; border: 1.5px solid #E2E8F0;">
+        <div>
+          <label class="form-label" style="font-size: 0.82rem;">Tingkat Kelas:</label>
+          <select class="form-input" id="preview-target-grade" style="padding: 0.5rem 0.75rem; font-size: 0.9rem;">
+            <option value="1">Kelas 1 (Fase A)</option>
+            <option value="2">Kelas 2 (Fase A)</option>
+            <option value="3">Kelas 3 (Fase B)</option>
+            <option value="4">Kelas 4 (Fase B)</option>
+            <option value="5">Kelas 5 (Fase C)</option>
+            <option value="6">Kelas 6 (Fase C)</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size: 0.82rem;">Mata Pelajaran:</label>
+          <select class="form-input" id="preview-target-mapel" style="padding: 0.5rem 0.75rem; font-size: 0.9rem;">
+            <option value="matematika">Matematika</option>
+            <option value="bindonesia">Bahasa Indonesia</option>
+            <option value="ipas">IPAS (Sains & Sosial)</option>
+            <option value="pancasila">Pendidikan Pancasila</option>
+            <option value="koding_ai">Koding & AI</option>
+            <option value="binggris">Bahasa Inggris</option>
+            <option value="senibudaya">Seni Budaya</option>
+            <option value="pjok">PJOK</option>
+            <option value="mulok">Muatan Lokal</option>
+            <option value="p5">Kokurikuler / P5</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size: 0.82rem;">Nama Materi / Topik:</label>
+          <input type="text" class="form-input" id="preview-target-topic" placeholder="Misal: Penjumlahan Bilangan" style="padding: 0.5rem 0.75rem; font-size: 0.9rem;">
+        </div>
+      </div>
+
+      <div style="margin: 1rem 0;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+          <span>Daftar Soal yang Terdeteksi:</span>
+          <span style="font-size: 0.8rem; font-weight: 600; color: #4F46E5;" id="doc-preview-count-badge">0 Butir</span>
+        </h4>
+        <div id="doc-preview-items-list" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 4px;">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.65rem; margin-top: 1.25rem;">
+        <button type="button" class="btn-primary-block" id="btn-save-imported-questions" style="flex: 2;">
+          Simpan Semua ke Bank Data Kuis 💾
+        </button>
+        <button type="button" class="btn-secondary-action" onclick="document.getElementById('modal-doc-preview').classList.remove('show')" style="flex: 1; border-radius: 12px; font-weight: 700;">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: TEMPLATE CONTOH FORMAT WORD/PDF
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-template-info">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">📋 Contoh Format Penulisan Soal</h3>
+        <button class="modal-close-btn">✕</button>
+      </div>
+      <p style="font-size: 0.88rem; color: #64748B; margin-bottom: 0.75rem;">
+        Agar parser sistem dapat membaca soal dari Word (.docx) atau PDF (.pdf) dengan 100% akurat, tuliskan soal dengan format standar berikut:
+      </p>
+      <div style="background: #1E293B; color: #F8FAFC; padding: 1rem; border-radius: 12px; font-family: monospace; font-size: 0.82rem; line-height: 1.6; white-space: pre-wrap; overflow-x: auto;">
+1. Ada 3 buah apel merah dan 2 apel hijau. Berapa jumlah semua apel?
+A. 4 apel
+B. 5 apel
+C. 6 apel
+D. 7 apel
+Kunci: B
+Pembahasan: 3 + 2 = 5 apel.
+
+2. Lawan kata dari BESAR adalah...
+A. Tinggi
+B. Kecil
+C. Panjang
+D. Lebar
+Kunci: B
+Pembahasan: Antonim dari besar adalah kecil.
+      </div>
+      <div style="margin-top: 1.25rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button type="button" class="btn-primary-block" onclick="generateAndDownloadExcelTemplate()" style="flex: 1; background: linear-gradient(135deg, #10B981, #059669);">
+          📊 Unduh Template Excel Multi-Sheet (.xlsx)
+        </button>
+        <button type="button" class="btn-secondary-action" onclick="downloadSampleWordTemplate()" style="flex: 1; font-weight: 700; border-radius: 12px;">
+          📄 Unduh Format Word / Teks (.txt)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: EXCEL MULTI-SHEET PREVIEW & CONFIRMATION
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-excel-preview">
+    <div class="modal-content" style="max-width: 780px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">📊 Pratinjau Excel Multi-Sheet</h3>
+          <span style="font-size: 0.82rem; color: #64748B;" id="excel-preview-file-info">File: Bank_Soal.xlsx</span>
+        </div>
+        <button class="modal-close-btn">✕</button>
+      </div>
+
+      <!-- Total summary stats banner -->
+      <div style="background: linear-gradient(135deg, #EEF2FF, #E0E7FF); border: 1.5px solid #C7D2FE; border-radius: 14px; padding: 0.85rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <span style="font-size: 0.82rem; font-weight: 700; color: #3730A3;">RINGKASAN DOKUMEN EXCEL:</span>
+          <div style="font-size: 0.95rem; font-weight: 700;" id="excel-preview-summary-text">Memuat...</div>
+        </div>
+        <span class="topic-badge-pill" style="background: #10B981; color: #FFFFFF; font-size: 0.8rem; padding: 0.35rem 0.75rem;">Multi-Sheet Ready ✓</span>
+      </div>
+
+      <!-- Sheet Tabs Row -->
+      <div style="margin-bottom: 0.75rem;">
+        <label class="form-label" style="font-size: 0.82rem;">Pilih Lembar Sheet Kelas untuk Ditinjau:</label>
+        <div class="excel-sheet-tabs-row" id="excel-sheet-tabs-container">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+      <!-- Active Sheet Details Card -->
+      <div id="excel-active-sheet-container" style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 14px; padding: 1rem; margin-bottom: 1rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h4 style="font-size: 1rem; font-weight: 700;" id="excel-active-sheet-title">Sheet: Kelas 1</h4>
+          <span class="topic-badge-pill" style="background: #E0E7FF; color: #4338CA;" id="excel-active-sheet-count">0 Soal</span>
+        </div>
+        <div id="excel-active-sheet-questions-list" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.65rem; padding-right: 4px;">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+      <!-- Bottom action buttons -->
+      <div style="display: flex; gap: 0.65rem; margin-top: 1.25rem;">
+        <button type="button" class="btn-primary-block" id="btn-save-all-excel-sheets" style="flex: 2; background: linear-gradient(135deg, #10B981, #059669);">
+          Simpan Semua Sheet ke Bank Data Kuis 🚀
+        </button>
+        <button type="button" class="btn-secondary-action" onclick="document.getElementById('modal-excel-preview').classList.remove('show')" style="flex: 1; border-radius: 12px; font-weight: 700;">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: PARENTAL SECURITY GATE (VERIFIKASI MATEMATIKA ORANG TUA)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-parental-gate">
+    <div class="modal-content" style="max-width: 440px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; border-bottom: none; padding-bottom: 0;">
+        <span style="font-size: 2.5rem;">👨‍👩‍👧</span>
+      </div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.35rem;">Gerbang Keamanan Orang Tua</h3>
+      <p style="font-size: 0.88rem; color: #64748B; margin-bottom: 1.25rem;">
+        Untuk memastikan akses pemantauan dibuka oleh Orang Tua / Wali, silakan selesaikan perhitungan singkat berikut:
+      </p>
+      
+      <div style="background: #F8FAFC; border: 2px dashed #CBD5E1; border-radius: 14px; padding: 1.2rem; margin-bottom: 1.25rem;">
+        <div style="font-size: 1.35rem; font-weight: 800; color: #4F46E5; margin-bottom: 0.75rem;" id="parent-gate-question">
+          Berapa 7 × 8 ?
+        </div>
+        <input type="number" class="form-input" id="input-parent-gate-answer" placeholder="Ketik jawaban angka..." style="text-align: center; font-size: 1.15rem; font-weight: 700; max-width: 200px; margin: 0 auto;">
+        <div id="parent-gate-error" style="display: none; color: #EF4444; font-size: 0.82rem; font-weight: 600; margin-top: 0.5rem;">
+          Jawaban belum tepat, silakan coba lagi.
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="button" class="btn-primary-block" onclick="verifyParentalGate()" style="flex: 2;">
+          Buka Portal Orang Tua 🚀
+        </button>
+        <button type="button" class="btn-secondary-action" onclick="document.getElementById('modal-parental-gate').classList.remove('show')" style="flex: 1; border-radius: 12px; font-weight: 700;">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: PARENT MODE PORTAL (RAPOR & EVALUASI BELAJAR ANAK)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-parent-portal">
+    <div class="modal-content" style="max-width: 820px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+          <span style="font-size: 1.8rem;">👨‍👩‍👧</span>
+          <div>
+            <h3 class="modal-title">Portal Pemantauan Belajar Orang Tua</h3>
+            <span style="font-size: 0.82rem; color: #64748B;">Laporan Rapor & Evaluasi Pembelajaran Ananda</span>
+          </div>
+        </div>
+        <button class="modal-close-btn">✕</button>
+      </div>
+
+      <!-- Section 1: Ringkasan Identitas & Progress Anak -->
+      <div class="parent-portal-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="parent-card" style="display: flex; align-items: center; gap: 1rem;">
+          <div style="font-size: 3rem;" id="parent-child-avatar">🐱</div>
+          <div>
+            <h4 style="font-size: 1.15rem; font-weight: 800;" id="parent-child-name">Teman Belajar</h4>
+            <div style="font-size: 0.82rem; color: #64748B;" id="parent-child-school">🏫 SD Merdeka</div>
+            <div style="margin-top: 0.35rem; display: flex; gap: 0.35rem; flex-wrap: wrap;">
+              <span class="topic-badge-pill" style="background: #E0E7FF; color: #4338CA;" id="parent-child-grade">Kelas 1 SD</span>
+              <span class="topic-badge-pill" style="background: #FEF3C7; color: #92400E;" id="parent-child-level">Level 1 🌱</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="parent-card">
+          <div class="parent-card-title">
+            <span>📊 Ringkasan Aktivitas</span>
+            <span style="font-size: 0.78rem; color: #10B981; font-weight: 700;">Data Terverifikasi ✓</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; text-align: center;">
+            <div style="background: #F8FAFC; border-radius: 10px; padding: 0.5rem;">
+              <div style="font-size: 1.2rem; font-weight: 800; color: #4F46E5;" id="parent-stat-quizzes">0</div>
+              <div style="font-size: 0.72rem; color: #64748B;">Kuis Dikerjakan</div>
+            </div>
+            <div style="background: #F8FAFC; border-radius: 10px; padding: 0.5rem;">
+              <div style="font-size: 1.2rem; font-weight: 800; color: #10B981;" id="parent-stat-avg">0</div>
+              <div style="font-size: 0.72rem; color: #64748B;">Rata-rata Skor</div>
+            </div>
+            <div style="background: #F8FAFC; border-radius: 10px; padding: 0.5rem;">
+              <div style="font-size: 1.2rem; font-weight: 800; color: #F59E0B;" id="parent-stat-streak">1 Hari</div>
+              <div style="font-size: 0.72rem; color: #64748B;">Streak Disiplin</div>
+            </div>
+            <div style="background: #F8FAFC; border-radius: 10px; padding: 0.5rem;">
+              <div style="font-size: 1.2rem; font-weight: 800; color: #EC4899;" id="parent-stat-speed">-</div>
+              <div style="font-size: 0.72rem; color: #64748B;">Rata-rata Waktu</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Peta Penguasaan Materi (Subject Mastery Matrix) -->
+      <div class="parent-card" style="margin-bottom: 1.25rem;">
+        <div class="parent-card-title">
+          <span>📚 Peta Penguasaan Mata Pelajaran</span>
+          <span style="font-size: 0.78rem; color: #64748B;">Kurikulum Merdeka</span>
+        </div>
+        <div id="parent-mastery-list" style="display: flex; flex-direction: column; gap: 0.35rem;">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+      <!-- Section 3: Catatan Gaya Belajar & Rekomendasi Pendampingan -->
+      <div class="parent-card" style="margin-bottom: 1.25rem;">
+        <div class="parent-card-title">
+          <span>💡 Rekomendasi Pendampingan Belajar di Rumah</span>
+        </div>
+        <div id="parent-recommendations-list">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+      <!-- Section 4: Aksi Khusus Orang Tua -->
+      <div class="parent-card" style="background: #F8FAFC;">
+        <div class="parent-card-title">
+          <span>⚙️ Pengaturan & Aksi Khusus Orang Tua</span>
+        </div>
+        <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
+          <button type="button" class="btn-primary-action" onclick="downloadLevelCertificatePDF()" style="flex: 2; background: linear-gradient(135deg, #4F46E5, #3730A3); font-size: 0.88rem; border-radius: 12px; padding: 0.65rem 1rem;">
+            📜 Cetak Piagam Penghargaan Level (PDF A4)
+          </button>
+          <button type="button" class="btn-secondary-action" onclick="promptParentChangeGrade()" style="flex: 1; font-size: 0.88rem; border-radius: 12px; font-weight: 700; color: #D97706;">
+            🔓 Ubah Kelas Siswa
+          </button>
+          <button type="button" class="btn-secondary-action" onclick="promptParentResetHistory()" style="flex: 1; font-size: 0.88rem; border-radius: 12px; font-weight: 700; color: #EF4444;">
+            🔄 Reset Riwayat
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: PARENT OVERRIDE CHANGE GRADE
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-parent-change-grade">
+    <div class="modal-content" style="max-width: 440px; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔓</div>
+      <h3 class="modal-title" style="margin-bottom: 0.35rem;">Ubah Tingkat Kelas Ananda</h3>
+      <p style="font-size: 0.85rem; color: #64748B; margin-bottom: 1rem;">
+        Fitur ini khusus Ayah/Bunda jika terjadi salah pilih kelas di awal atau kebutuhan evaluasi/remedial belajar.
+      </p>
+      
+      <div class="form-group" style="text-align: left;">
+        <label class="form-label" for="parent-select-new-grade">Pilih Kelas Baru untuk Ananda:</label>
+        <select class="form-input" id="parent-select-new-grade" style="font-size: 1rem; padding: 0.65rem 0.85rem;">
+          <option value="1">Kelas 1 SD (Fase A)</option>
+          <option value="2">Kelas 2 SD (Fase A)</option>
+          <option value="3">Kelas 3 SD (Fase B)</option>
+          <option value="4">Kelas 4 SD (Fase B)</option>
+          <option value="5">Kelas 5 SD (Fase C)</option>
+          <option value="6">Kelas 6 SD (Fase C)</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+        <button type="button" class="btn-primary-block" onclick="confirmParentChangeGrade()" style="flex: 2;">
+          Simpan Kelas Baru 💾
+        </button>
+        <button type="button" class="btn-secondary-action" onclick="document.getElementById('modal-parent-change-grade').classList.remove('show')" style="flex: 1; border-radius: 12px; font-weight: 700;">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: PARENT RESET HISTORY CONFIRMATION
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-parent-reset-confirm">
+    <div class="modal-content" style="max-width: 440px; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⚠️</div>
+      <h3 class="modal-title" style="margin-bottom: 0.35rem; color: #EF4444;">Konfirmasi Reset Riwayat</h3>
+      <p style="font-size: 0.85rem; color: #64748B; margin-bottom: 1.25rem;" id="parent-reset-confirm-desc">
+        Apakah Ayah/Bunda yakin ingin mereset seluruh riwayat kuis dan skor Ananda? Tindakan ini akan mengosongkan statistik riwayat dan memperbarui leaderboard secara bersih.
+      </p>
+
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="button" class="btn-primary-block" onclick="executeParentResetHistory()" style="flex: 2; background: #EF4444;">
+          Ya, Reset Riwayat 🔄
+        </button>
+        <button type="button" class="btn-secondary-action" onclick="document.getElementById('modal-parent-reset-confirm').classList.remove('show')" style="flex: 1; border-radius: 12px; font-weight: 700;">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: KELAS TERKUNCI (LOCKED CLASS DIALOG)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-locked-class">
+    <div class="modal-content" style="max-width: 480px; text-align: center;">
+      <div style="font-size: 3rem; margin-bottom: 0.5rem;">🔒</div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.35rem;" id="locked-class-title">
+        Kelas Ini Terkunci!
+      </h3>
+      <p style="font-size: 0.88rem; color: #64748B; margin-bottom: 1.25rem;" id="locked-class-desc">
+        Kamu saat ini terdaftar resmi di <strong>Kelas 1 SD</strong>. Pilihan kelas dikunci agar data perolehan poin dan kompetisi di papan peringkat tetap adil dan jujur.
+      </p>
+
+      <div style="background: #FEF3C7; border: 1.5px solid #FCD34D; border-radius: 14px; padding: 1rem; text-align: left; margin-bottom: 1.25rem;">
+        <h4 style="font-size: 0.92rem; font-weight: 700; color: #92400E; margin-bottom: 0.35rem;">Syarat Naik ke Kelas Berikutnya:</h4>
+        <ul style="font-size: 0.84rem; color: #78350F; margin: 0; padding-left: 1.2rem; line-height: 1.5;">
+          <li>Mencapai minimal <strong>Level 5: Satria Pelajar (1.500 XP)</strong>.</li>
+          <li>Menyelesaikan <strong>Ujian Kenaikan Kelas</strong> dengan nilai minimal <strong>90</strong>.</li>
+        </ul>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem;" id="locked-class-action-row">
+        <button type="button" class="btn-primary-block" id="btn-goto-promotion-exam" onclick="openPromotionExamModal()" style="flex: 2; display: none; background: linear-gradient(135deg, #10B981, #059669);">
+          Ikuti Ujian Naik Kelas Sekarang 🎓
+        </button>
+        <button type="button" class="btn-secondary-action" onclick="document.getElementById('modal-locked-class').classList.remove('show')" style="flex: 1; border-radius: 12px; font-weight: 700;">
+          Mengerti, Tetap di Kelas Saya 📚
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: UJIAN KENAIKAN KELAS (PROMOTION EXAM INTRO)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-promotion-exam">
+    <div class="modal-content" style="max-width: 520px; text-align: center;">
+      <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎓</div>
+      <h3 style="font-size: 1.3rem; font-weight: 800; color: #065F46; margin-bottom: 0.35rem;" id="exam-modal-title">
+        Ujian Kenaikan Kelas 1 ke Kelas 2
+      </h3>
+      <p style="font-size: 0.88rem; color: #64748B; margin-bottom: 1.25rem;">
+        Ujian ini menguji pemahaman menyeluruhmu dari berbagai mata pelajaran Kurikulum Merdeka di kelasmu saat ini.
+      </p>
+
+      <div style="background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: 14px; padding: 1rem; text-align: left; margin-bottom: 1.25rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; font-size: 0.85rem; color: #065F46;">
+          <div>📝 <strong>Jumlah Soal:</strong> 10 Butir Campuran</div>
+          <div>⏱️ <strong>Batas Waktu:</strong> 45 Detik / Soal</div>
+          <div>🎯 <strong>Syarat Kelulusan:</strong> Skor Minimal 90</div>
+          <div>⭐ <strong>Hadiah:</strong> Gelar Baru & Naik Kelas!</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="button" class="btn-primary-block" onclick="startPromotionExamSession()" style="flex: 2; background: linear-gradient(135deg, #10B981, #059669);">
+          Mulai Ujian Sekarang 🚀
+        </button>
+        <button type="button" class="btn-secondary-action" onclick="document.getElementById('modal-promotion-exam').classList.remove('show')" style="flex: 1; border-radius: 12px; font-weight: 700;">
+          Nanti Saja
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: GOLDEN QUIZ CHALLENGE (DOUBLE XP)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-golden-challenge">
+    <div class="modal-content" style="max-width: 500px; text-align: center; border: 2px solid #F59E0B;">
+      <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🔥</div>
+      <span class="golden-badge-glow">EVENT TANTANGAN KHUSUS</span>
+      <h3 style="font-size: 1.35rem; font-weight: 800; color: #92400E; margin-bottom: 0.35rem;">
+        Golden Quiz Challenge!
+      </h3>
+      <p style="font-size: 0.88rem; color: #78350F; margin-bottom: 1.25rem;">
+        Kamu telah menyelesaikan 3 kuis berturut-turut! Saatnya membuktikan kemampuanmu dengan tantangan kilat berhadiah <strong>DOUBLE XP</strong>!
+      </p>
+
+      <div style="background: #FFFBEB; border: 1.5px solid #FCD34D; border-radius: 14px; padding: 1rem; margin-bottom: 1.25rem; font-size: 0.86rem; color: #92400E; text-align: left;">
+        <div>⚡ <strong>Aturan Main:</strong> 10 Soal Acak Berbobot</div>
+        <div style="margin-top: 0.25rem;">⏳ <strong>Timer:</strong> 30 Detik per Soal</div>
+        <div style="margin-top: 0.25rem;">🌟 <strong>Bonus:</strong> Skor ≥ 80 = Poin XP Dikalikan 2x!</div>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="button" class="btn-primary-block" onclick="launchGoldenChallengeSession()" style="flex: 2; background: linear-gradient(135deg, #D97706, #B45309);">
+          Gass Mulai Tantangan! ⚡
+        </button>
+        <button type="button" class="btn-secondary-action" onclick="document.getElementById('modal-golden-challenge').classList.remove('show')" style="flex: 1; border-radius: 12px; font-weight: 700;">
+          Tunda Dulu
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: SELEBRASI NAIK LEVEL & PIAGAM PENGHARGAAN
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-level-up">
+    <div class="modal-content" style="max-width: 500px; text-align: center;">
+      <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🏆</div>
+      <span class="topic-badge-pill" style="background: #10B981; color: #FFFFFF; font-weight: 800; font-size: 0.8rem; padding: 0.25rem 0.75rem;">LEVEL UP!</span>
+      <h3 style="font-size: 1.4rem; font-weight: 800; margin-top: 0.5rem; margin-bottom: 0.35rem;" id="levelup-title">
+        Selamat, Kamu Naik ke Level 2!
+      </h3>
+      <p style="font-size: 0.9rem; color: #64748B; margin-bottom: 1.25rem;" id="levelup-desc">
+        Kamu telah meraih gelar baru dan membuka penghargaan spesial!
+      </p>
+
+      <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 14px; padding: 1rem; margin-bottom: 1.25rem;" id="levelup-reward-box">
+        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem;">🎁 Hadiah Kenaikan Level:</h4>
+        <div id="levelup-unlocked-items" style="font-size: 0.88rem; color: #4F46E5; font-weight: 700;">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; flex-direction: column;">
+        <button type="button" class="btn-primary-block" onclick="downloadLevelCertificatePDF()" style="background: linear-gradient(135deg, #4F46E5, #3730A3); font-size: 0.95rem;">
+          📜 Unduh Piagam Penghargaan (PDF A4)
+        </button>
+        <button type="button" class="btn-secondary-action" onclick="document.getElementById('modal-level-up').classList.remove('show')" style="border-radius: 12px; font-weight: 700;">
+          Lanjut Petualangan Belajar 🚀
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: PEMILIHAN PERAN (ROLE SELECTOR: MODE SISWA VS MODE GURU)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-role-selector" style="z-index: 1000;">
+    <div class="modal-content" style="max-width: 650px; text-align: center; position: relative;">
+      <button class="modal-close-btn" id="btn-close-role-selector" onclick="closeRoleSelectorModal()" style="display: none;">✕</button>
+      <div style="font-size: 3rem; margin-bottom: 0.25rem;">✨</div>
+      <h2 class="modal-title" style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.35rem;">
+        Selamat Datang di KuisPintar SD!
+      </h2>
+      <p style="font-size: 0.92rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+        Pilih peran akses Anda untuk memulai petualangan belajar atau mengelola materi:
+      </p>
+
+      <div class="role-cards-grid">
+        <!-- Kartu 1: Mode Siswa / Anak -->
+        <div class="role-select-card" id="card-role-student" onclick="applyUserRole('student')">
+          <div>
+            <div class="role-card-icon">🎒</div>
+            <h3 class="role-card-title">Mode Siswa (Anak)</h3>
+            <div class="role-card-subtitle">Belajar & Bermain Kuis</div>
+            <p class="role-card-desc">
+              Selesaikan kuis interaktif Kurikulum Merdeka Kelas 1–6, kumpulkan poin XP, buka lencana prestasi, dan raih posisi juara di papan peringkat!
+            </p>
+          </div>
+          <button type="button" class="btn btn-primary" style="width: 100%; border-radius: 12px; font-weight: 700; margin-top: 0.5rem;">
+            Masuk Mode Siswa 🚀
+          </button>
+        </div>
+
+        <!-- Kartu 2: Mode Guru / Pendidik -->
+        <div class="role-select-card" id="card-role-teacher" onclick="applyUserRole('teacher')">
+          <div>
+            <div class="role-card-icon">👨‍🏫</div>
+            <h3 class="role-card-title">Mode Guru (Pendidik)</h3>
+            <div class="role-card-subtitle" style="color: var(--secondary);">Kelola Bank Soal & Materi</div>
+            <p class="role-card-desc">
+              Kelola 56 paket soal kurikulum, tambah butir soal baru, impor naskah Word/PDF/Excel, dan unduh lembar kerja PDF. <em>(Arena bermain kuis dikunci).</em>
+            </p>
+          </div>
+          <button type="button" class="btn btn-secondary" style="width: 100%; border-radius: 12px; font-weight: 700; margin-top: 0.5rem;">
+            Masuk Mode Guru 🔒
+          </button>
+        </div>
+      </div>
+
+      <div style="font-size: 0.78rem; color: var(--text-soft); line-height: 1.4;">
+        💡 Mode Guru dilindungi kode PIN pendidik (default: <strong>1234</strong>) agar siswa tidak dapat mengubah kunci jawaban.
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: PRATINJAU SOAL & KUNCI GURU (TEACHER PREVIEW MODAL)
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-teacher-preview">
+    <div class="modal-content" style="max-width: 750px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid var(--border-light); padding-bottom: 0.85rem; margin-bottom: 1rem;">
+        <div>
+          <span class="topic-badge-pill" style="background: var(--primary-light); color: var(--primary); font-size: 0.75rem; font-weight: 700;">👨‍🏫 PRATINJAU MODE GURU</span>
+          <h3 class="modal-title" id="teacher-preview-title" style="margin-top: 0.35rem; font-size: 1.2rem;">Pratinjau Paket Soal</h3>
+          <p id="teacher-preview-desc" style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">Rincian butir soal, kunci jawaban, dan pembahasan materi.</p>
+        </div>
+        <button class="modal-close-btn" onclick="document.getElementById('modal-teacher-preview').classList.remove('show')">✕</button>
+      </div>
+
+      <div id="teacher-preview-content" style="flex: 1; overflow-y: auto; padding-right: 0.5rem;">
+        <!-- Injected dynamically via JavaScript -->
+      </div>
+
+      <div style="border-top: 1.5px solid var(--border-light); padding-top: 0.85rem; margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <span style="font-size: 0.82rem; color: var(--text-muted);">
+          🔒 Siswa tidak dapat melihat kunci jawaban ini.
+        </span>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn btn-secondary" id="btn-preview-open-editor" onclick="openTeacherEditForCurrentPackage()">
+            ✏️ Buka di Studio Guru
+          </button>
+          <button type="button" class="btn btn-primary" onclick="document.getElementById('modal-teacher-preview').classList.remove('show')">
+            Tutup Pratinjau
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div id="app-toast" style="display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.9); color: #FFFFFF; padding: 0.65rem 1.25rem; border-radius: 9999px; font-size: 0.9rem; font-weight: 600; z-index: 300; box-shadow: 0 10px 25px rgba(0,0,0,0.2); pointer-events: none; transition: opacity 0.3s ease; white-space: nowrap;"></div>
+
+  <!-- Application Logic Scripts -->
+  <script src="data-soal.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
